@@ -1,0 +1,86 @@
+include "declarations.testo"
+
+macro enter_if_selected(text) {
+	if (check js "find_text().match('${text}').match_foreground('white').size() > 0") {
+		press Enter
+	} else {
+		abort "String ${text} is not selected!"
+	}
+}
+
+macro install_ubuntu(hostname, login, password = "${default_password}") {
+	start
+	wait js "find_text().match('English').match_foreground('white').match_background('gray').size() == 1"
+	press Enter
+	wait js "find_text().match('Install Ubuntu Server').match_foreground('white').size() == 1"; press Enter;
+	wait "Choose the language";	enter_if_selected("English")
+	wait "Select your location"; enter_if_selected("United States")
+	wait "Detect keyboard layout?";	enter_if_selected("No")
+	wait "Country of origin for the keyboard"; enter_if_selected("English (US)")
+	wait "Keyboard layout"; enter_if_selected("English (US)")
+	wait "No network interfaces detected" || "Primary network interface" || "Hostname:" timeout 5m
+	if (check "No network interfaces detected") {
+		enter_if_selected("Continue")
+	} else if (check "Primary network interface"){
+		enter_if_selected("ens3")
+	}
+	wait "Hostname:" timeout 5m; press Backspace*36; type "${hostname}"; press Tab; enter_if_selected("Continue")
+	wait "Full name for the new user"; type "${login}"; press Tab; enter_if_selected("Continue")
+	wait "Username for your account"; press Tab; enter_if_selected("Continue")
+	wait "Choose a password for the new user"; type "${password}"; press Tab*2; enter_if_selected("Continue")
+	wait "Re-enter password to verify"; type "${password}"; press Tab*2; enter_if_selected("Continue")
+	if (check "Use weak password" timeout 3s) {
+		press Left; enter_if_selected("Yes")
+	}
+	wait "Encrypt your home directory?"; enter_if_selected("No")
+	wait "Select your time zone" || "Is this time zone correct?" timeout 2m;
+	if (check "Select your time zone") {
+		enter_if_selected("Eastern")
+	} else {
+		enter_if_selected("Yes")
+	}
+	wait "Partitioning method"; enter_if_selected("Guided - use entire disk and set up LVM")
+	wait "Select disk to partition"; enter_if_selected("SCSI1")
+	wait "Write the changes to disks and configure LVM?"; press Left; enter_if_selected("Yes")
+	wait "Amount of volume group to use for guided partitioning"; press Tab; enter_if_selected("Continue")
+	wait "Write the changes to disks?"; press Left; enter_if_selected("Yes")
+	wait "HTTP proxy information" timeout 3m; press Tab; enter_if_selected("Continue")
+	wait "How do you want to manage upgrades" timeout 6m; enter_if_selected("No automatic updates")
+	wait "Choose software to install"; press Tab; enter_if_selected("Continue")
+	wait "Install the GRUB boot loader to the master boot record?" timeout 10m; enter_if_selected("Yes")
+	wait "Installation complete" timeout 1m; 
+
+	unplug dvd; enter_if_selected("Continue")
+	wait "${hostname} login:" timeout 2m; type "${login}"; press Enter
+	wait "Password:"; type "${password}"; press Enter
+	wait "Welcome to Ubuntu"
+}
+
+
+macro install_guest_additions(hostname, login, password="${default_password}") {
+	plug dvd "${ISO_DIR}/testo-guest-additions.iso"
+
+	type "sudo su"; press Enter;
+	#Обратите внимание, обращаться к параметрам можно в любом участке строки
+	wait "password for ${login}"; type "${password}"; press Enter
+	wait "root@${hostname}"
+
+	type "mount /dev/cdrom /media"; press Enter
+	wait "mounting read-only"; type "dpkg -i /media/${guest_additions_pkg}"; press Enter;
+	wait "Setting up testo-guest-additions"
+	type "umount /media"; press Enter;
+	#Дадим немного времени для команды umount
+	sleep 2s
+	unplug dvd
+}
+
+macro unplug_nat(hostname, login, password="${default_password}") {
+	shutdown
+	unplug nic nat
+	start
+
+	wait "${hostname} login:" timeout 2m; type "${login}"; press Enter
+	wait "Password:"; type "${password}"; press Enter
+	wait "Welcome to Ubuntu"
+}
+
