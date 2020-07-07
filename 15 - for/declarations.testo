@@ -12,10 +12,15 @@ param default_password "ThisIsStrongPassword"
 param server_hostname "server"
 param server_login "server-login"
 
+param TESTO_CHECK_DEFAULT_INTERVAL "10ms"
+
 machine server {
 	cpus: 1
 	ram: 512Mb
-	disk_size: 5Gb
+	disk main: {
+		size: 5Gb
+	}
+
 	iso: "${ISO_DIR}/ubuntu_server.iso"
 
 	nic nat: {

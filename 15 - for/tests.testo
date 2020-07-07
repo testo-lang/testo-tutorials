@@ -25,7 +25,6 @@ macro vifm_select(menu_entry) {
 				break
 			}
 			press Down
-			sleep 50ms
 		} else {
 			abort "Menu entry ${menu_entry} doesn't exist!"
 		}
@@ -36,7 +35,6 @@ test cycles_demo: server_prepare {
 	server {
 		type "vifm /"; press Enter
 		sleep 2s
-		press Down*19 #Необязательная подсказка
 		vifm_select("usr")
 		vifm_select("sbin")
 		abort "stop here"
