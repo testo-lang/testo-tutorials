@@ -15,7 +15,9 @@ param client_login "client-login"
 machine client {
 	cpus: 1
 	ram: 512Mb
-	disk_size: 5Gb
+	disk main: {
+		size: 5Gb
+	}
 	iso: "${ISO_DIR}/ubuntu_server.iso"
 
 	nic nat: {
@@ -34,7 +36,9 @@ param server_login "server-login"
 machine server {
 	cpus: 1
 	ram: 512Mb
-	disk_size: 5Gb
+	disk main: {
+		size: 5Gb
+	}
 	iso: "${ISO_DIR}/ubuntu_server.iso"
 
 	nic nat: {
