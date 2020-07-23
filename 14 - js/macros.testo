@@ -44,11 +44,17 @@ macro install_ubuntu(hostname, login, password = "${default_password}") {
 	wait "Write the changes to disks and configure LVM?"; press Left; enter_if_selected("Yes")
 	wait "Amount of volume group to use for guided partitioning"; press Tab; enter_if_selected("Continue")
 	wait "Write the changes to disks?"; press Left; enter_if_selected("Yes")
-	wait "HTTP proxy information" timeout 3m; press Tab; enter_if_selected("Continue")
+	wait "HTTP proxy information" timeout 3m;
+
+	if (DEFINED HTTP_PROXY) {
+		type "${HTTP_PROXY}"
+	}
+
+	press Tab; enter_if_selected("Continue")
 	wait "How do you want to manage upgrades" timeout 6m; enter_if_selected("No automatic updates")
 	wait "Choose software to install"; press Tab; enter_if_selected("Continue")
 	wait "Install the GRUB boot loader to the master boot record?" timeout 10m; enter_if_selected("Yes")
-	wait "Installation complete" timeout 1m; 
+	wait "Installation complete" timeout 1m;
 
 	unplug dvd; enter_if_selected("Continue")
 	wait "${hostname} login:" timeout 2m; type "${login}"; press Enter
@@ -74,13 +80,27 @@ macro install_guest_additions(hostname, login, password="${default_password}") {
 	unplug dvd
 }
 
-macro unplug_nat(hostname, login, password="${default_password}") {
+macro unplug_nic(hostname, login, nic_name, password="${default_password}") {
 	shutdown
-	unplug nic nat
+	unplug nic "${nic_name}"
 	start
 
 	wait "${hostname} login:" timeout 2m; type "${login}"; press Enter
 	wait "Password:"; type "${password}"; press Enter
 	wait "Welcome to Ubuntu"
+}
+
+#макрос, инкапсулирующий в себе несколько действий:
+#1) Подключение флешки
+#2) Монтирование флешки
+#3) Выполнение заданной баш-команды
+#4) безопасное извлечение флешки
+macro process_flash(flash_name, command) {
+	plug flash "${flash_name}"
+	sleep 5s
+	exec bash "mount /dev/sdb1 /media"
+	exec bash "${command}"
+	exec bash "umount /media"
+	unplug flash "${flash_name}"
 }
 

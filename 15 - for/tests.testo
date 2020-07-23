@@ -18,7 +18,7 @@ macro vifm_select(menu_entry) {
 	} else {
 		press g*2
 
-		for (i IN RANGE "0" "50") {
+		for (i IN RANGE 0 50) {
 			if (check js "find_text().match('${menu_entry}').match_background('blue').size() == 1") {
 				print "Got to entry ${menu_entry} in ${i} steps"
 				press Enter
@@ -35,6 +35,7 @@ test cycles_demo: server_prepare {
 	server {
 		type "vifm /"; press Enter
 		sleep 2s
+		press Down*19 #Необязательная подсказка
 		vifm_select("usr")
 		vifm_select("sbin")
 		abort "stop here"
