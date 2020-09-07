@@ -53,6 +53,6 @@ machine server {
 
 flash exchange_flash {
 	fs: "ntfs"
-	size: 16Mb
+	size: 8Mb
 	folder: "./folder_to_copy"
 }

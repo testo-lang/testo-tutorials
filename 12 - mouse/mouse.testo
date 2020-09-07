@@ -59,13 +59,13 @@ test mouse_demo: install_ubuntu {
 		mouse click "Welcome to Ubuntu"
 		mouse click "Quit"
 
-		#Create a folder
+		# Create a folder
 		mouse rclick 400 300
 		mouse click "New Folder"
 		wait "Folder name"; type "My folder"; mouse click "Create"
 		wait "My folder" && !"Create"
 
-		#Move the folder to trash
+		# Move the folder to trash
 		mouse move "My folder";
 		mouse hold lbtn
 		mouse move 200 300
@@ -73,10 +73,10 @@ test mouse_demo: install_ubuntu {
 		mouse release
 		wait !"My folder"
 
-		#Empty trash
+		# Empty trash
 		mouse move 0 0
 		mouse dclick "Trash"
-		#Check if our folder actually is in the trash
+		# Check if our folder actually is in the trash
 		wait "My folder"
 		mouse click "Empty"
 		mouse click "Empty Trash"

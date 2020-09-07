@@ -61,14 +61,15 @@ test test_ping: client_prepare, server_prepare {
 	server exec bash "ping 192.168.1.1 -c5"
 }
 
-#обратите внимание, тест отнаследован не от test_ping,
-#а тех же client_prepare и server_prepare
-#То есть test_ping и exchange_files_with_flash лежат на одном уровне
-#иерархии в дереве тестов
+# Take a note, that the test is inherited not from
+# the test_ping, but from the client_prepare and
+# server_prepare tests.
+# Which means that test_ping and exchange_files_with_flash
+# both lay on the samy tests tree level
 [no_snapshots: true]
 test exchange_files_with_flash: client_prepare, server_prepare {
 	client {
-		#Создаём файл, который нужно будет передать на сервер
+		# Create a file to be transferred to the server
 		exec bash "echo \"Hello from client!\" > /tmp/copy_me_to_server.txt"
 		process_flash("exchange_flash", "cp /tmp/copy_me_to_server.txt /media")
 	}

@@ -53,8 +53,8 @@ test server_install_ubuntu {
 		start
 		wait "English"
 		press Enter
-		#Действия могут разделяться символом новой строки
-		#или точкой с запятой
+		# The actions can be separated with a newline
+		# or a semicolon
 		wait "Install Ubuntu Server"; press Enter;
 		wait "Choose the language";	press Enter
 		wait "Select your location"; press Enter
@@ -70,7 +70,7 @@ test server_install_ubuntu {
 		wait "Re-enter password to verify"; type "${default_password}"; press Enter
 		wait "Use weak password?"; press Left, Enter
 		wait "Encrypt your home directory?"; press Enter
-		
+
 		#wait "Select your timezone" timeout 2m; press Enter
 		wait "Is this time zone correct?" timeout 2m; press Enter
 		wait "Partitioning method"; press Enter
@@ -82,7 +82,7 @@ test server_install_ubuntu {
 		wait "How do you want to manage upgrades" timeout 6m; press Enter
 		wait "Choose software to install"; press Enter
 		wait "Install the GRUB boot loader to the master boot record?" timeout 10m; press Enter
-		wait "Installation complete" timeout 1m; 
+		wait "Installation complete" timeout 1m;
 
 		unplug dvd; press Enter
 		wait "${server_hostname} login:" timeout 2m; type "${server_login}"; press Enter
@@ -97,7 +97,7 @@ test server_install_guest_additions: server_install_ubuntu {
 		plug dvd "${ISO_DIR}/testo-guest-additions.iso"
 
 		type "sudo su"; press Enter;
-		#Обратите внимание, обращаться к параметрам можно в любом участке строки
+		# Take a note that you may reference params in any part of the string
 		wait "password for ${server_login}"; type "${default_password}"; press Enter
 		wait "root@${server_hostname}"
 
@@ -105,7 +105,7 @@ test server_install_guest_additions: server_install_ubuntu {
 		wait "mounting read-only"; type "dpkg -i /media/${guest_additions_pkg}"; press Enter;
 		wait "Setting up testo-guest-additions"
 		type "umount /media"; press Enter;
-		#Дадим немного времени для команды umount
+		# Give a little time for the umount to do its job
 		sleep 2s
 		unplug dvd
 	}
@@ -144,8 +144,8 @@ test client_install_ubuntu {
 		start
 		wait "English"
 		press Enter
-		#Действия могут разделяться символом новой строки
-		#или точкой с запятой
+		# The actions can be separated with a newline
+		# or a semicolon
 		wait "Install Ubuntu Server"; press Enter;
 		wait "Choose the language";	press Enter
 		wait "Select your location"; press Enter
@@ -161,7 +161,7 @@ test client_install_ubuntu {
 		wait "Re-enter password to verify"; type "${default_password}"; press Enter
 		wait "Use weak password?"; press Left, Enter
 		wait "Encrypt your home directory?"; press Enter
-		
+
 		#wait "Select your timezone" timeout 2m; press Enter
 		wait "Is this time zone correct?" timeout 2m; press Enter
 		wait "Partitioning method"; press Enter
@@ -173,7 +173,7 @@ test client_install_ubuntu {
 		wait "How do you want to manage upgrades" timeout 6m; press Enter
 		wait "Choose software to install"; press Enter
 		wait "Install the GRUB boot loader to the master boot record?" timeout 10m; press Enter
-		wait "Installation complete" timeout 1m; 
+		wait "Installation complete" timeout 1m;
 
 		unplug dvd; press Enter
 		wait "${client_hostname} login:" timeout 2m; type "${client_login}"; press Enter
@@ -187,7 +187,7 @@ test client_install_guest_additions: client_install_ubuntu {
 		plug dvd "${ISO_DIR}/testo-guest-additions.iso"
 
 		type "sudo su"; press Enter;
-		#Обратите внимание, обращаться к параметрам можно в любом участке строки
+		# Take a note that you may reference params in any part of the string
 		wait "password for ${client_login}"; type "${default_password}"; press Enter
 		wait "root@${client_hostname}"
 
@@ -195,7 +195,7 @@ test client_install_guest_additions: client_install_ubuntu {
 		wait "mounting read-only"; type "dpkg -i /media/${guest_additions_pkg}"; press Enter;
 		wait "Setting up testo-guest-additions"
 		type "umount /media"; press Enter;
-		#Дадим немного времени для команды umount
+		# Give a little time for the umount to do its job
 		sleep 2s
 		unplug dvd
 	}
