@@ -278,4 +278,8 @@ test exchange_files_with_flash: client_prepare, server_prepare {
 
 		unplug flash exchange_flash
 	}
+
+	exchange_flash {
+		copyfrom "/copy_me_to_server.txt" "./copy_me_to_server.txt"
+	}
 }
