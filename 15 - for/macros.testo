@@ -105,3 +105,11 @@ macro process_flash(flash_name, command) {
 	unplug flash "${flash_name}"
 }
 
+# A command macro suitable for copying a file between arbitrary vms
+# Copies a file from vm to /media/filename on the flash
+# Copies a file from the flash to another vm
+macro copy_file_with_flash(vm_from, vm_to, copy_flash, file_from, file_to) {
+	"${vm_from}" process_flash("${copy_flash}", "cp ${file_from} /media/$(basename ${file_from})")
+	"${vm_to}" process_flash("${copy_flash}", "cp /media/$(basename ${file_from}) ${file_to}")
+}
+

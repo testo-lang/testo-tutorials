@@ -68,16 +68,10 @@ test test_ping: client_prepare, server_prepare {
 # both lay on the samy tests tree level
 [no_snapshots: true]
 test exchange_files_with_flash: client_prepare, server_prepare {
-	client {
-		# Create a file to be transferred to the server
-		exec bash "echo \"Hello from client!\" > /tmp/copy_me_to_server.txt"
-		process_flash("exchange_flash", "cp /tmp/copy_me_to_server.txt /media")
-	}
-
-	server {
-		process_flash("exchange_flash", "cp /media/copy_me_to_server.txt /tmp")
-		exec bash "cat /tmp/copy_me_to_server.txt"
-	}
+	#Create a file to be transferred
+	client exec bash "echo \"Hello from client!\" > /tmp/copy_me_to_server.txt"
+	copy_file_with_flash("client", "server", "exchange_flash", "/tmp/copy_me_to_server.txt", "/tmp/copy_me_to_server.txt")
+	server exec bash "cat /tmp/copy_me_to_server.txt"
 }
 
 test install_ubuntu_desktop {

@@ -14,6 +14,8 @@ machine ubuntu_desktop {
 		attached_to: "internet"
 		adapter_type: "e1000"
 	}
+
+	qemu_spice_agent: true
 }
 
 param login "desktop"
@@ -51,6 +53,12 @@ test install_ubuntu {
 		mouse click "${login}";
 		wait "Password"; type "${password}"; mouse click "Sign In"
 		wait "Welcome to Ubuntu"
+	}
+}
+
+test lala: install_ubuntu {
+	ubuntu_desktop {
+		abort "stop here"
 	}
 }
 
