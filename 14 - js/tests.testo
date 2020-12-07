@@ -122,8 +122,8 @@ test libre_office_launch: install_ubuntu_desktop {
 test libre_office_demo: libre_office_launch {
 	ubuntu_desktop {
 		mouse rclick js """
-			row_index = find_text().match('15').from_left(0).center()
-			column_index = find_text().match('G').from_right(0).center()
+			row_index = find_text('15').from_left(0).center()
+			column_index = find_text('G').from_right(0).center()
 
 			result = {x: column_index.x, y: row_index.y}
 		"""

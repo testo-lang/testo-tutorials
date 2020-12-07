@@ -1,7 +1,7 @@
 include "declarations.testo"
 
 macro enter_if_selected(text) {
-	if (check js "find_text().match('${text}').match_foreground('white').size() > 0") {
+	if (check js "find_text('${text}').match_foreground('white').size() > 0") {
 		press Enter
 	} else {
 		abort "String ${text} is not selected!"
@@ -10,9 +10,9 @@ macro enter_if_selected(text) {
 
 macro install_ubuntu(hostname, login, password = "${default_password}") {
 	start
-	wait js "find_text().match('English').match_foreground('white').match_background('gray').size() == 1"
+	wait js "find_text('English').match_color('white', 'gray').size() == 1"
 	press Enter
-	wait js "find_text().match('Install Ubuntu Server').match_foreground('white').size() == 1"; press Enter;
+	wait js "find_text('Install Ubuntu Server').match_foreground('white').size() == 1"; press Enter;
 	wait "Choose the language";	enter_if_selected("English")
 	wait "Select your location"; enter_if_selected("United States")
 	wait "Detect keyboard layout?";	enter_if_selected("No")
