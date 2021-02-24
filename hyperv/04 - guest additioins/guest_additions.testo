@@ -1,0 +1,121 @@
+
+network internet {
+	mode: "nat"
+}
+
+machine my_ubuntu {
+	cpus: 1
+	ram: 512Mb
+	disk main: {
+		size: 5Gb
+	}
+	iso: "C:\\iso\\ubuntu_server.iso"
+
+	nic nat: {
+		attached_to: "internet"
+	}
+}
+
+test ubuntu_installation {
+	my_ubuntu {
+		start
+		# The actions can be separated with a newline
+		# or a semicolon
+		wait "Install Ubuntu Server"; press Enter;
+		wait "Choose the language";	press Enter
+		wait "Select your location"; press Enter
+		wait "Detect keyboard layout?";	press Enter
+		wait "Country of origin for the keyboard"; press Enter
+		wait "Keyboard layout"; press Enter
+		#wait "No network interfaces detected" timeout 5m; press Enter
+		wait "Hostname:" timeout 5m; press Backspace*36; type "my-ubuntu"; press Enter
+		wait "Full name for the new user"; type "my-ubuntu-login"; press Enter
+		wait "Username for your account"; press Enter
+		wait "Choose a password for the new user"; type "1111"; press Enter
+		wait "Re-enter password to verify"; type "1111"; press Enter
+		wait "Use weak password?"; press Left, Enter
+		wait "Encrypt your home directory?"; press Enter
+
+		wait "Is this time zone correct?" timeout 2m; press Enter
+		wait "Partitioning method"; press Enter
+		wait "Select disk to partition"; press Enter
+		wait "Write the changes to disks and configure LVM?"; press Left, Enter
+		wait "Amount of volume group to use for guided partitioning"; press Enter
+		wait "Force UEFI installation?"; press Left, Enter
+		wait "Write the changes to disks?"; press Left, Enter
+		wait "HTTP proxy information" timeout 3m; press Enter
+		wait "How do you want to manage upgrades" timeout 6m; press Enter
+		wait "Choose software to install"; press Enter
+		wait "Installation complete" timeout 30m;
+
+		unplug dvd; press Enter
+		wait "login:" timeout 2m; type "my-ubuntu-login"; press Enter
+		wait "Password:"; type "1111"; press Enter
+		wait "Welcome to Ubuntu"
+	}
+}
+
+test ubuntu_prepare: ubuntu_installation {
+	my_ubuntu {
+		# Enter sudo mode
+		type "sudo su"; press Enter
+		wait "password for my-ubuntu-login"; type "1111"; press Enter
+		wait "root@my-ubuntu"
+
+		# Reset the eth0 NIC to prevent any issues with it after the rollback
+		type "ip l s eth0 down && ip l s eth0 up && echo Result is $?"; press Enter
+
+		# Check that apt is OK
+		type "clear && apt update && echo Result is $?"; press Enter
+		wait "Result is 0"
+
+		# Install linux-azure package
+		type "clear && apt install -y linux-azure && echo Result is $?"; press Enter
+		wait "Result is 0" timeout 15m		
+
+		# Reboot and login
+		type "reboot"; press Enter
+
+		wait "login:" timeout 2m; type "my-ubuntu-login"; press Enter
+		wait "Password:"; type "1111"; press Enter
+		wait "Welcome to Ubuntu"
+
+		# Enter sudo once more
+		type "sudo su"; press Enter;
+		wait "password for my-ubuntu-login"; type "1111"; press Enter
+		wait "root@my-ubuntu"
+
+		# Load the hv_sock module
+		type "clear && modprobe hv_sock && echo Result is $?"; press Enter;
+		wait "Result is 0"
+
+		type "clear && lsmod | grep hv"; press Enter
+		wait "hv_sock"
+	}
+}
+
+test ubuntu_install_guest_additions: ubuntu_prepare {
+	my_ubuntu {
+		plug dvd "C:\\iso\\testo-guest-additions-hyperv.iso"
+
+		type "mount /dev/cdrom /media"; press Enter
+		wait "mounting read-only"
+		type "clear && dpkg -i /media/*.deb && echo Result is $?"; press Enter;
+		wait "Result is 0"
+		type "clear && umount /media && echo Result is $?"; press Enter;
+		wait "Result is 0"
+		sleep 2s
+		unplug dvd
+	}
+}
+
+test ubuntu_ga_demo: ubuntu_install_guest_additions {
+	my_ubuntu {
+		exec bash """
+			echo Hello world
+			echo from bash
+		"""
+		# Double quotes require the escape symbol in one-line strings
+		exec python3 "print(\"Hello from python3!\")"
+	}
+}
