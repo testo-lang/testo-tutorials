@@ -9,12 +9,16 @@ machine my_ubuntu {
 	disk main: {
 		size: 5Gb
 	}
-	iso: "C:\\iso\\ubuntu_server.iso"
+	iso: "${ISO_DIR}\\ubuntu_server.iso"
 
 	nic nat: {
 		attached_to: "internet"
 	}
 }
+
+param hostname "my-ubuntu"
+param login "my-ubuntu-login"
+param password "1111"
 
 test ubuntu_installation {
 	my_ubuntu {
@@ -28,11 +32,11 @@ test ubuntu_installation {
 		wait "Country of origin for the keyboard"; press Enter
 		wait "Keyboard layout"; press Enter
 		#wait "No network interfaces detected" timeout 5m; press Enter
-		wait "Hostname:" timeout 5m; press Backspace*36; type "my-ubuntu"; press Enter
-		wait "Full name for the new user"; type "my-ubuntu-login"; press Enter
+		wait "Hostname:" timeout 5m; press Backspace*36; type "${hostname}"; press Enter
+		wait "Full name for the new user"; type "${login}"; press Enter
 		wait "Username for your account"; press Enter
-		wait "Choose a password for the new user"; type "1111"; press Enter
-		wait "Re-enter password to verify"; type "1111"; press Enter
+		wait "Choose a password for the new user"; type "${password}"; press Enter
+		wait "Re-enter password to verify"; type "${password}"; press Enter
 		wait "Use weak password?"; press Left, Enter
 		wait "Encrypt your home directory?"; press Enter
 
@@ -49,8 +53,8 @@ test ubuntu_installation {
 		wait "Installation complete" timeout 30m;
 
 		unplug dvd; press Enter
-		wait "login:" timeout 2m; type "my-ubuntu-login"; press Enter
-		wait "Password:"; type "1111"; press Enter
+		wait "login:" timeout 2m; type "${login}"; press Enter
+		wait "Password:"; type "${password}"; press Enter
 		wait "Welcome to Ubuntu"
 	}
 }
@@ -59,8 +63,8 @@ test ubuntu_prepare: ubuntu_installation {
 	my_ubuntu {
 		# Enter sudo mode
 		type "sudo su"; press Enter
-		wait "password for my-ubuntu-login"; type "1111"; press Enter
-		wait "root@my-ubuntu"
+		wait "password for ${login}"; type "${password}"; press Enter
+		wait "root@${hostname}"
 
 		# Reset the eth0 NIC to prevent any issues with it after the rollback
 		type "dhclient -r eth0 && dhclient eth0 && echo Result is $?"; press Enter
@@ -76,14 +80,14 @@ test ubuntu_prepare: ubuntu_installation {
 		# Reboot and login
 		type "reboot"; press Enter
 
-		wait "login:" timeout 2m; type "my-ubuntu-login"; press Enter
-		wait "Password:"; type "1111"; press Enter
+		wait "login:" timeout 2m; type "${login}"; press Enter
+		wait "Password:"; type "${password}"; press Enter
 		wait "Welcome to Ubuntu"
 
 		# Enter sudo once more
 		type "sudo su"; press Enter;
-		wait "password for my-ubuntu-login"; type "1111"; press Enter
-		wait "root@my-ubuntu"
+		wait "password for ${login}"; type "${password}"; press Enter
+		wait "root@${hostname}"
 
 		# Load the hv_sock module
 		type "clear && modprobe hv_sock && echo Result is $?"; press Enter;
@@ -96,7 +100,7 @@ test ubuntu_prepare: ubuntu_installation {
 
 test ubuntu_install_guest_additions: ubuntu_prepare {
 	my_ubuntu {
-		plug dvd "C:\\iso\\testo-guest-additions-hyperv.iso"
+		plug dvd "${ISO_DIR}\\testo-guest-additions-hyperv.iso"
 
 		type "mount /dev/cdrom /media"; press Enter
 		wait "mounting read-only"
