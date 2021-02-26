@@ -113,7 +113,7 @@ test ubuntu_install_guest_additions: ubuntu_prepare {
 	}
 }
 
-test ubuntu_ga_demo: ubuntu_install_guest_additions {
+test ubuntu_guest_additions_demo: ubuntu_install_guest_additions {
 	my_ubuntu {
 		exec bash """
 			echo Hello world
