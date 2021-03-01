@@ -1,0 +1,273 @@
+
+network internet {
+	mode: "nat"
+}
+
+network LAN {
+	mode: "internal"
+}
+
+machine client {
+	cpus: 1
+	ram: 512Mb
+	disk main: {
+		size: 5Gb
+	}
+	iso: "${ISO_DIR}\\ubuntu_server.iso"
+
+	nic nat: {
+		attached_to: "internet"
+	}
+
+	nic server_side: {
+		attached_to: "LAN"
+		mac: "52:54:00:00:00:AA"
+	}
+}
+
+
+machine server {
+	cpus: 1
+	ram: 512Mb
+	disk main: {
+		size: 5Gb
+	}
+	iso: "${ISO_DIR}\\ubuntu_server.iso"
+
+	nic nat: {
+		attached_to: "internet"
+	}
+
+	nic client_side: {
+		attached_to: "LAN"
+		mac: "52:54:00:00:00:BB"
+	}
+}
+
+param server_hostname "server"
+param server_login "server-login"
+param default_password "1111"
+
+test server_install_ubuntu {
+	server {
+		start
+		# The actions can be separated with a newline
+		# or a semicolon
+		wait "Install Ubuntu Server"; press Enter;
+		wait "Choose the language";	press Enter
+		wait "Select your location"; press Enter
+		wait "Detect keyboard layout?";	press Enter
+		wait "Country of origin for the keyboard"; press Enter
+		wait "Keyboard layout"; press Enter
+		#wait "No network interfaces detected" timeout 5m; press Enter
+		wait "Primary network interface"; press Enter
+		wait "Hostname:" timeout 5m; press Backspace*36; type "${server_hostname}"; press Enter
+		wait "Full name for the new user"; type "${server_login}"; press Enter
+		wait "Username for your account"; press Enter
+		wait "Choose a password for the new user"; type "${default_password}"; press Enter
+		wait "Re-enter password to verify"; type "${default_password}"; press Enter
+		wait "Use weak password?"; press Left, Enter
+		wait "Encrypt your home directory?"; press Enter
+
+		wait "Is this time zone correct?" timeout 2m; press Enter
+		wait "Partitioning method"; press Enter
+		wait "Select disk to partition"; press Enter
+		wait "Write the changes to disks and configure LVM?"; press Left, Enter
+		wait "Amount of volume group to use for guided partitioning"; press Enter
+		wait "Force UEFI installation?"; press Left, Enter
+		wait "Write the changes to disks?"; press Left, Enter
+		wait "HTTP proxy information" timeout 3m; press Enter
+		wait "How do you want to manage upgrades" timeout 6m; press Enter
+		wait "Choose software to install"; press Enter
+		wait "Installation complete" timeout 30m;
+
+		unplug dvd; press Enter
+		wait "login:" timeout 2m; type "${server_login}"; press Enter
+		wait "Password:"; type "${default_password}"; press Enter
+		wait "Welcome to Ubuntu"
+	}
+}
+
+test server_prepare: server_install_ubuntu {
+	server {
+		# Enter sudo mode
+		type "sudo su"; press Enter
+		wait "password for ${server_login}"; type "${default_password}"; press Enter
+		wait "root@${server_hostname}"
+
+		# Reset the eth0 NIC to prevent any issues with it after the rollback
+		type "dhclient -r eth0 && dhclient eth0 && echo Result is $?"; press Enter
+
+		# Check that apt is OK
+		type "clear && apt update && echo Result is $?"; press Enter
+		wait "Result is 0"
+
+		# Install linux-azure package
+		type "clear && apt install -y linux-azure && echo Result is $?"; press Enter
+		wait "Result is 0" timeout 15m		
+
+		# Reboot and login
+		type "reboot"; press Enter
+
+		wait "login:" timeout 2m; type "${server_login}"; press Enter
+		wait "Password:"; type "${default_password}"; press Enter
+		wait "Welcome to Ubuntu"
+
+		# Enter sudo once more
+		type "sudo su"; press Enter;
+		wait "password for ${server_login}"; type "${default_password}"; press Enter
+		wait "root@${server_hostname}"
+
+		# Load the hv_sock module
+		type "clear && modprobe hv_sock && echo Result is $?"; press Enter;
+		wait "Result is 0"
+
+		type "clear && lsmod | grep hv"; press Enter
+		wait "hv_sock"
+	}
+}
+
+param guest_additions_pkg "testo-guest-additions.deb"
+
+test server_install_guest_additions: server_prepare {
+	server {
+		plug dvd "${ISO_DIR}\\testo-guest-additions-hyperv.iso"
+
+		type "mount /dev/cdrom /media"; press Enter
+		wait "mounting read-only"
+		type "clear && dpkg -i /media/${guest_additions_pkg} && echo Result is $?"; press Enter;
+		wait "Result is 0"
+		type "clear && umount /media && echo Result is $?"; press Enter;
+		wait "Result is 0"
+		sleep 2s
+		unplug dvd
+	}
+}
+
+test server_setup_nic: server_install_guest_additions {
+	server {
+		copyto ".\\rename_net.sh" "/opt/rename_net.sh"
+		exec bash """
+			chmod +x /opt/rename_net.sh
+			/opt/rename_net.sh 52:54:00:00:00:bb client_side
+			ip a a 192.168.1.1/24 dev client_side
+			ip l s client_side up
+			ip ad
+		"""
+	}
+}
+
+param client_hostname "client"
+param client_login "client-login"
+
+test client_install_ubuntu {
+	client {
+		start
+		# The actions can be separated with a newline
+		# or a semicolon
+		wait "Install Ubuntu Server"; press Enter;
+		wait "Choose the language";	press Enter
+		wait "Select your location"; press Enter
+		wait "Detect keyboard layout?";	press Enter
+		wait "Country of origin for the keyboard"; press Enter
+		wait "Keyboard layout"; press Enter
+		#wait "No network interfaces detected" timeout 5m; press Enter
+		wait "Primary network interface"; press Enter
+		wait "Hostname:" timeout 5m; press Backspace*36; type "${client_hostname}"; press Enter
+		wait "Full name for the new user"; type "${client_login}"; press Enter
+		wait "Username for your account"; press Enter
+		wait "Choose a password for the new user"; type "${default_password}"; press Enter
+		wait "Re-enter password to verify"; type "${default_password}"; press Enter
+		wait "Use weak password?"; press Left, Enter
+		wait "Encrypt your home directory?"; press Enter
+
+		wait "Is this time zone correct?" timeout 2m; press Enter
+		wait "Partitioning method"; press Enter
+		wait "Select disk to partition"; press Enter
+		wait "Write the changes to disks and configure LVM?"; press Left, Enter
+		wait "Amount of volume group to use for guided partitioning"; press Enter
+		wait "Force UEFI installation?"; press Left, Enter
+		wait "Write the changes to disks?"; press Left, Enter
+		wait "HTTP proxy information" timeout 3m; press Enter
+		wait "How do you want to manage upgrades" timeout 6m; press Enter
+		wait "Choose software to install"; press Enter
+		wait "Installation complete" timeout 30m;
+
+		unplug dvd; press Enter
+		wait "login:" timeout 2m; type "${client_login}"; press Enter
+		wait "Password:"; type "${default_password}"; press Enter
+		wait "Welcome to Ubuntu"
+	}
+}
+
+test client_prepare: client_install_ubuntu {
+	client {
+		# Enter sudo mode
+		type "sudo su"; press Enter
+		wait "password for ${client_login}"; type "${default_password}"; press Enter
+		wait "root@${client_hostname}"
+
+		# Reset the eth0 NIC to prevent any issues with it after the rollback
+		type "dhclient -r eth0 && dhclient eth0 && echo Result is $?"; press Enter
+
+		# Check that apt is OK
+		type "clear && apt update && echo Result is $?"; press Enter
+		wait "Result is 0"
+
+		# Install linux-azure package
+		type "clear && apt install -y linux-azure && echo Result is $?"; press Enter
+		wait "Result is 0" timeout 15m		
+
+		# Reboot and login
+		type "reboot"; press Enter
+
+		wait "login:" timeout 2m; type "${client_login}"; press Enter
+		wait "Password:"; type "${default_password}"; press Enter
+		wait "Welcome to Ubuntu"
+
+		# Enter sudo once more
+		type "sudo su"; press Enter;
+		wait "password for ${client_login}"; type "${default_password}"; press Enter
+		wait "root@${client_hostname}"
+
+		# Load the hv_sock module
+		type "clear && modprobe hv_sock && echo Result is $?"; press Enter;
+		wait "Result is 0"
+
+		type "clear && lsmod | grep hv"; press Enter
+		wait "hv_sock"
+	}
+}
+
+test client_install_guest_additions: client_prepare {
+	client {
+		plug dvd "${ISO_DIR}\\testo-guest-additions-hyperv.iso"
+
+		type "mount /dev/cdrom /media"; press Enter
+		wait "mounting read-only"
+		type "clear && dpkg -i /media/${guest_additions_pkg} && echo Result is $?"; press Enter;
+		wait "Result is 0"
+		type "clear && umount /media && echo Result is $?"; press Enter;
+		wait "Result is 0"
+		sleep 2s
+		unplug dvd
+	}
+}
+
+test client_setup_nic: client_install_guest_additions {
+	client {
+		copyto ".\\rename_net.sh" "/opt/rename_net.sh"
+		exec bash """
+			chmod +x /opt/rename_net.sh
+			/opt/rename_net.sh 52:54:00:00:00:aa server_side
+			ip a a 192.168.1.2/24 dev server_side
+			ip l s server_side up
+			ip ad
+		"""
+	}
+}
+
+test test_ping: client_setup_nic, server_setup_nic {
+	client exec bash "ping 192.168.1.2 -c5"
+	server exec bash "ping 192.168.1.1 -c5"
+}
