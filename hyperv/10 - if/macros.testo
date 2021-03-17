@@ -1,0 +1,102 @@
+include "declarations.testo"
+
+macro install_ubuntu(hostname, login, password = "${default_password}") {
+	start
+	# The actions can be separated with a newline
+	# or a semicolon
+	wait "Install Ubuntu Server"; press Enter;
+	wait "Choose the language";	press Enter
+	wait "Select your location"; press Enter
+	wait "Detect keyboard layout?";	press Enter
+	wait "Country of origin for the keyboard"; press Enter
+	wait "Keyboard layout"; press Enter
+	wait "No network interfaces detected" || "Primary network interface" || "Hostname:" timeout 5m
+	if (check "No network interfaces detected") {
+		press Right, Enter
+	} else if (check "Primary network interface") {
+		press Enter
+	}
+	wait "Hostname:" timeout 5m; press Backspace*36; type "${hostname}"; press Enter
+	wait "Full name for the new user"; type "${login}"; press Enter
+	wait "Username for your account"; press Enter
+	wait "Choose a password for the new user"; type "${password}"; press Enter
+	wait "Re-enter password to verify"; type "${password}"; press Enter
+	if (check "Use weak password" timeout 3s) {
+		wait "Use weak password?"; press Left, Enter
+	}
+	wait "Encrypt your home directory?"; press Enter
+
+	wait "Select your time zone" || "Is this time zone correct?" timeout 2m; press Enter
+	wait "Partitioning method"; press Enter
+	wait "Select disk to partition"; press Enter
+	wait "Write the changes to disks and configure LVM?"; press Left, Enter
+	wait "Amount of volume group to use for guided partitioning"; press Enter
+	wait "Force UEFI installation?"; press Left, Enter
+	wait "Write the changes to disks?"; press Left, Enter
+	wait "HTTP proxy information" timeout 3m; press Enter
+	if (DEFINED HTTP_PROXY) {
+		type "${HTTP_PROXY}"
+	}
+	wait "How do you want to manage upgrades" timeout 6m; press Enter
+	wait "Choose software to install"; press Enter
+	wait "Installation complete" timeout 30m;
+
+	unplug dvd; press Enter
+	wait "login:" timeout 2m; type "${login}"; press Enter
+	wait "Password:"; type "${password}"; press Enter
+	wait "Welcome to Ubuntu"
+}
+
+macro enter_sudo(hostname, login, password) {
+	type "sudo su"; press Enter;
+	wait "password for ${login}"; type "${password}"; press Enter
+	wait "root@${hostname}"
+}
+
+macro exec_bash_command(command, time_to_wait = "1m") {
+	type "clear && ${command} && echo Result is $?"; press Enter
+	wait "Result is 0" timeout "${time_to_wait}"
+}
+
+macro prepare_ubuntu(hostname, login, password = "${default_password}") {
+	# Enter sudo mode
+	enter_sudo("${hostname}", "${login}", "${password}")
+
+	# Reset the eth0 NIC to prevent any issues with it after the rollback
+	exec_bash_command("dhclient -r eth0 && dhclient eth0")
+	# Check that apt is OK
+	exec_bash_command("apt update")
+	# Install linux-azure package
+	exec_bash_command("apt install -y linux-azure", "15m")
+
+	# Reboot and login
+	type "reboot"; press Enter
+
+	wait "login:" timeout 2m; type "${login}"; press Enter
+	wait "Password:"; type "${password}"; press Enter
+	wait "Welcome to Ubuntu"
+
+	# Enter sudo once more
+	enter_sudo("${hostname}", "${login}", "${password}")
+
+	# Load the hv_sock module
+	exec_bash_command("modprobe hv_sock")
+
+	type "clear && lsmod | grep hv"; press Enter
+	wait "hv_sock"
+}
+
+param guest_additions_pkg "testo-guest-additions.deb"
+
+macro install_guest_additions() {
+	plug dvd "${ISO_DIR}\\testo-guest-additions-hyperv.iso"
+
+	type "mount /dev/cdrom /media"; press Enter
+	wait "mounting read-only"
+
+	exec_bash_command("dpkg -i /media/${guest_additions_pkg}")
+	exec_bash_command("umount /media")
+
+	sleep 2s
+	unplug dvd
+}

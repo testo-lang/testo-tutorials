@@ -1,0 +1,58 @@
+
+include "macros.testo"
+
+
+test server_install_ubuntu {
+	server install_ubuntu("${server_hostname}", "${server_login}")
+}
+
+test server_prepare: server_install_ubuntu {
+	server prepare_ubuntu("${server_hostname}", "${server_login}")
+}
+
+test server_install_guest_additions: server_prepare {
+	server install_guest_additions()
+}
+
+test server_setup_nic: server_install_guest_additions {
+	server {
+		copyto ".\\rename_net.sh" "/opt/rename_net.sh"
+		exec bash """
+			chmod +x /opt/rename_net.sh
+			/opt/rename_net.sh 52:54:00:00:00:bb client_side
+			ip a a 192.168.1.1/24 dev client_side
+			ip l s client_side up
+			ip ad
+		"""
+	}
+}
+
+test client_install_ubuntu {
+	client install_ubuntu("${client_hostname}", "${client_login}", "1111")
+}
+
+test client_prepare: client_install_ubuntu {
+	client prepare_ubuntu("${client_hostname}", "${client_login}")
+}
+
+test client_install_guest_additions: client_prepare {
+	client install_guest_additions()
+}
+
+test client_setup_nic: client_install_guest_additions {
+	client {
+		copyto ".\\rename_net.sh" "/opt/rename_net.sh"
+		exec bash """
+			chmod +x /opt/rename_net.sh
+			/opt/rename_net.sh 52:54:00:00:00:aa server_side
+			ip a a 192.168.1.2/24 dev server_side
+			ip l s server_side up
+			ip ad
+		"""
+	}
+}
+
+test test_ping: client_setup_nic, server_setup_nic {
+	client exec bash "ping 192.168.1.2 -c5"
+	server exec bash "ping 192.168.1.1 -c5"
+}
