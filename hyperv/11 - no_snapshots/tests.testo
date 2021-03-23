@@ -10,6 +10,7 @@ test server_prepare: server_install_ubuntu {
 	server prepare_ubuntu("${server_hostname}", "${server_login}")
 }
 
+[no_snapshots: true]
 test server_install_guest_additions: server_prepare {
 	server install_guest_additions()
 }
@@ -35,6 +36,7 @@ test client_prepare: client_install_ubuntu {
 	client prepare_ubuntu("${client_hostname}", "${client_login}", "1111")
 }
 
+[no_snapshots: true]
 test client_install_guest_additions: client_prepare {
 	client install_guest_additions()
 }
@@ -52,7 +54,12 @@ test client_setup_nic: client_install_guest_additions {
 	}
 }
 
-test test_ping: client_setup_nic, server_setup_nic {
+[no_snapshots: true]
+test test_ping_1: client_setup_nic, server_setup_nic {
 	client exec bash "ping 192.168.1.2 -c5"
+}
+
+[no_snapshots: true]
+test test_ping_2: client_setup_nic, server_setup_nic {
 	server exec bash "ping 192.168.1.1 -c5"
 }
