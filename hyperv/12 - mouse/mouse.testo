@@ -6,16 +6,13 @@ network internet {
 machine ubuntu_desktop {
 	cpus: 1
 	ram: 2Gb
-	iso: "${ISO_DIR}/ubuntu_desktop.iso"
+	iso: "${ISO_DIR}\\ubuntu_desktop.iso"
 	disk main: {
 		size: 10Gb
 	}
 	nic internet: {
 		attached_to: "internet"
-		adapter_type: "e1000"
 	}
-
-	qemu_spice_agent: true
 }
 
 param login "desktop"
@@ -25,8 +22,6 @@ param password "1111"
 test install_ubuntu {
 	ubuntu_desktop {
 		start
-		wait "English"
-		press Enter
 		wait "Try Ubuntu without installing"; press Down, Enter
 		wait "Welcome" timeout 5m
 		mouse click "Continue".center_bottom()
@@ -36,7 +31,8 @@ test install_ubuntu {
 		mouse click "Minimal installation"
 		mouse click "Download updates while installing"; mouse click "Continue"
 		wait "Installation type"; mouse move 0 0; mouse click "Install Now".center_bottom()
-		wait "Write the changes to disks?"; mouse click "Continue".from_bottom(0).center_bottom()
+		#wait "Write the changes to disks?"; mouse click "Continue".from_bottom(0).center_bottom()
+		wait "Write the changes to disks?"; mouse click "Continue".center_bottom()
 		wait "Where are you?"; mouse click "Continue".center_bottom()
 		wait "Who are you?";
 
@@ -45,7 +41,7 @@ test install_ubuntu {
 		mouse click "password:".from_top(0).right_center().move_right(20); type "${password}"
 		mouse click "password:".from_top(1).right_center().move_right(20); type "${password}"
 		mouse click "Continue".center_bottom()
-		mouse click "Restart Now" timeout 10m
+		mouse click "Restart Now" timeout 30m
 		wait "Please remove the installation medium" timeout 2m;
 		unplug dvd; stop; start
 		wait "${login}" && "Not listed?" timeout 3m
