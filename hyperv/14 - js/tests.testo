@@ -1,22 +1,23 @@
+
 include "macros.testo"
+
 
 test server_install_ubuntu {
 	server install_ubuntu("${server_hostname}", "${server_login}")
 }
 
-[no_snapshots: true]
-test server_install_guest_additions: server_install_ubuntu {
-	server install_guest_additions("${server_hostname}", "${server_login}")
+test server_prepare: server_install_ubuntu {
+	server prepare_ubuntu("${server_hostname}", "${server_login}")
 }
 
 [no_snapshots: true]
-test server_unplug_nat: server_install_guest_additions {
-	server unplug_nic("${server_hostname}", "${server_login}", "nat")
+test server_install_guest_additions: server_prepare {
+	server install_guest_additions()
 }
 
-test server_prepare: server_unplug_nat {
+test server_setup_nic: server_install_guest_additions {
 	server {
-		copyto "./rename_net.sh" "/opt/rename_net.sh"
+		copyto ".\\rename_net.sh" "/opt/rename_net.sh"
 		exec bash """
 			chmod +x /opt/rename_net.sh
 			/opt/rename_net.sh 52:54:00:00:00:bb client_side
@@ -31,20 +32,18 @@ test client_install_ubuntu {
 	client install_ubuntu("${client_hostname}", "${client_login}", "1111")
 }
 
-[no_snapshots: true]
-test client_install_guest_additions: client_install_ubuntu {
-	client install_guest_additions("${client_hostname}", "${client_login}", "1111")
+test client_prepare: client_install_ubuntu {
+	client prepare_ubuntu("${client_hostname}", "${client_login}", "1111")
 }
 
 [no_snapshots: true]
-test client_unplug_nat: client_install_guest_additions {
-	client unplug_nic("${client_hostname}", "${client_login}", "nat", "1111")
+test client_install_guest_additions: client_prepare {
+	client install_guest_additions()
 }
 
-test client_prepare: client_unplug_nat {
+test client_setup_nic: client_install_guest_additions {
 	client {
-		process_flash("exchange_flash", "cp /media/rename_net.sh /opt/rename_net.sh")
-
+		copyto ".\\rename_net.sh" "/opt/rename_net.sh"
 		exec bash """
 			chmod +x /opt/rename_net.sh
 			/opt/rename_net.sh 52:54:00:00:00:aa server_side
@@ -56,29 +55,18 @@ test client_prepare: client_unplug_nat {
 }
 
 [no_snapshots: true]
-test test_ping: client_prepare, server_prepare {
+test test_ping_1: client_setup_nic, server_setup_nic {
 	client exec bash "ping 192.168.1.2 -c5"
-	server exec bash "ping 192.168.1.1 -c5"
 }
 
-# Take a note, that the test is inherited not from
-# the test_ping, but from the client_prepare and
-# server_prepare tests.
-# Which means that test_ping and exchange_files_with_flash
-# both lay on the samy tests tree level
 [no_snapshots: true]
-test exchange_files_with_flash: client_prepare, server_prepare {
-	#Create a file to be transferred
-	client exec bash "echo \"Hello from client!\" > /tmp/copy_me_to_server.txt"
-	copy_file_with_flash("client", "server", "exchange_flash", "/tmp/copy_me_to_server.txt", "/tmp/copy_me_to_server.txt")
-	server exec bash "cat /tmp/copy_me_to_server.txt"
+test test_ping_2: client_setup_nic, server_setup_nic {
+	server exec bash "ping 192.168.1.1 -c5"
 }
 
 test install_ubuntu_desktop {
 	ubuntu_desktop {
 		start
-		wait "English"
-		press Enter
 		wait "Try Ubuntu without installing"; press Down, Enter
 		wait "Welcome" timeout 5m
 		mouse click "Continue".center_bottom()
@@ -96,7 +84,7 @@ test install_ubuntu_desktop {
 		mouse click "password:".from_top(0).right_center().move_right(20); type "${default_password}"
 		mouse click "password:".from_top(1).right_center().move_right(20); type "${default_password}"
 		mouse click "Continue".center_bottom()
-		mouse click "Restart Now" timeout 15m
+		mouse click "Restart Now" timeout 30m
 		wait "Please remove the installation medium" timeout 2m;
 		unplug dvd; stop; start
 		wait "${desktop_login}" && "Not listed?" timeout 3m

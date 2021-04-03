@@ -31,8 +31,7 @@ test install_ubuntu {
 		mouse click "Minimal installation"
 		mouse click "Download updates while installing"; mouse click "Continue"
 		wait "Installation type"; mouse move 0 0; mouse click "Install Now".center_bottom()
-		#wait "Write the changes to disks?"; mouse click "Continue".from_bottom(0).center_bottom()
-		wait "Write the changes to disks?"; mouse click "Continue".center_bottom()
+		wait "Write the changes to disks?"; mouse click "Continue".from_bottom(0).center_bottom()
 		wait "Where are you?"; mouse click "Continue".center_bottom()
 		wait "Who are you?";
 

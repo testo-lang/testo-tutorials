@@ -33,10 +33,11 @@ macro install_ubuntu(hostname, login, password = "${default_password}") {
 	wait "Amount of volume group to use for guided partitioning"; press Enter
 	wait "Force UEFI installation?"; press Left, Enter
 	wait "Write the changes to disks?"; press Left, Enter
-	wait "HTTP proxy information" timeout 3m; press Enter
+	wait "HTTP proxy information" timeout 3m; 
 	if (DEFINED HTTP_PROXY) {
 		type "${HTTP_PROXY}"
 	}
+	press Enter
 	wait "How do you want to manage upgrades" timeout 6m; press Enter
 	wait "Choose software to install"; press Enter
 	wait "Installation complete" timeout 30m;
