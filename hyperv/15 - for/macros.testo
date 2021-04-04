@@ -1,0 +1,115 @@
+include "declarations.testo"
+
+macro enter_if_selected(text) {
+	if (check js "find_text('${text}').match_color('white', 'red').size() > 0") {
+		press Enter
+	} else {
+		abort "String ${text} is not selected!"
+	}
+}
+
+macro install_ubuntu(hostname, login, password = "${default_password}") {
+	start
+	wait "Install Ubuntu Server"; press Enter;
+	wait "Choose the language"; enter_if_selected("English")
+	wait "Select your location"; enter_if_selected("United States")
+	wait "Detect keyboard layout?";	enter_if_selected("No")
+	wait "Country of origin for the keyboard"; enter_if_selected("English (US)")
+	wait "Keyboard layout"; enter_if_selected("English (US)")
+	wait "No network interfaces detected" || "Primary network interface" || "Hostname:" timeout 5m
+	if (check "No network interfaces detected") {
+		enter_if_selected("Continue")
+	} else if (check "Primary network interface") {
+		enter_if_selected("eth0")
+	}
+	wait "Hostname:" timeout 5m; press Backspace*36; type "${hostname}"; press Tab; enter_if_selected("Continue")
+	wait "Full name for the new user"; type "${login}"; press Tab; enter_if_selected("Continue")
+	wait "Username for your account"; press Tab; enter_if_selected("Continue")
+	wait "Choose a password for the new user"; type "${password}"; press Tab*2; enter_if_selected("Continue")
+	wait "Re-enter password to verify"; type "${password}"; press Tab*2; enter_if_selected("Continue")
+	if (check "Use weak password" timeout 3s) {
+		press Left; enter_if_selected("Yes")
+	}
+	wait "Encrypt your home directory?"; enter_if_selected("No")
+
+	wait "Select your time zone" || "Is this time zone correct?" timeout 2m; 
+	if (check "Select your time zone") {
+		enter_if_selected("Eastern")
+	} else {
+		enter_if_selected("Yes")
+	}
+	wait "Partitioning method"; enter_if_selected("Guided - use entire disk and set up LVM")
+	wait "Select disk to partition";  enter_if_selected("SCSI1")
+	wait "Write the changes to disks and configure LVM?"; press Left; enter_if_selected("Yes")
+	wait "Amount of volume group to use for guided partitioning"; press Tab; enter_if_selected("Continue")
+
+	wait "Force UEFI installation?";  press Left; enter_if_selected("Yes")
+	wait "Write the changes to disks?"; press Left; enter_if_selected("Yes")
+	wait "HTTP proxy information" timeout 3m;
+	if (DEFINED HTTP_PROXY) {
+		type "${HTTP_PROXY}"
+	}
+	press Tab; enter_if_selected("Continue")
+	wait "How do you want to manage upgrades" timeout 6m; enter_if_selected("No automatic updates")
+	wait "Choose software to install"; press Tab; enter_if_selected("Continue")
+	wait "Installation complete" timeout 30m;
+
+	unplug dvd; enter_if_selected("Continue")
+	wait "login:" timeout 2m; type "${login}"; press Enter
+	wait "Password:"; type "${password}"; press Enter
+	wait "Welcome to Ubuntu"
+}
+
+macro enter_sudo(hostname, login, password) {
+	type "sudo su"; press Enter;
+	wait "password for ${login}"; type "${password}"; press Enter
+	wait "root@${hostname}"
+}
+
+macro exec_bash_command(command, time_to_wait = "1m") {
+	type "clear && ${command} && echo Result is $?"; press Enter
+	wait "Result is 0" timeout "${time_to_wait}"
+}
+
+macro prepare_ubuntu(hostname, login, password = "${default_password}") {
+	# Enter sudo mode
+	enter_sudo("${hostname}", "${login}", "${password}")
+
+	# Reset the eth0 NIC to prevent any issues with it after the rollback
+	exec_bash_command("dhclient -r eth0 && dhclient eth0")
+	# Check that apt is OK
+	exec_bash_command("apt update")
+	# Install linux-azure package
+	exec_bash_command("apt install -y linux-azure", "15m")
+
+	# Reboot and login
+	type "reboot"; press Enter
+
+	wait "login:" timeout 2m; type "${login}"; press Enter
+	wait "Password:"; type "${password}"; press Enter
+	wait "Welcome to Ubuntu"
+
+	# Enter sudo once more
+	enter_sudo("${hostname}", "${login}", "${password}")
+
+	# Load the hv_sock module
+	exec_bash_command("modprobe hv_sock")
+
+	type "clear && lsmod | grep hv"; press Enter
+	wait "hv_sock"
+}
+
+param guest_additions_pkg "testo-guest-additions.deb"
+
+macro install_guest_additions() {
+	plug dvd "${ISO_DIR}\\testo-guest-additions-hyperv.iso"
+
+	type "mount /dev/cdrom /media"; press Enter
+	wait "mounting read-only"
+
+	exec_bash_command("dpkg -i /media/${guest_additions_pkg}")
+	exec_bash_command("umount /media")
+
+	sleep 2s
+	unplug dvd
+}
